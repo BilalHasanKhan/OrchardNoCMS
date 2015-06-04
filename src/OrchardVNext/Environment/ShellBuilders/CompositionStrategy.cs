@@ -9,11 +9,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace OrchardVNext.Environment.ShellBuilders {
+namespace OrchardVNext.Environment.ShellBuilders
+{
     /// <summary>
     /// Service at the host level to transform the cachable descriptor into the loadable blueprint.
     /// </summary>
-    public interface ICompositionStrategy {
+    public interface ICompositionStrategy
+    {
         /// <summary>
         /// Using information from the IExtensionManager, transforms and populates all of the
         /// blueprint model the shell builders will need to correctly initialize a tenant IoC container.
@@ -39,13 +41,15 @@ namespace OrchardVNext.Environment.ShellBuilders {
 
             var excludedTypes = GetExcludedTypes(features);
 
-            var dependencies = BuildBlueprint(features, IsDependency, (t, f) => BuildDependency(t, f, descriptor), excludedTypes);
+            var modules = BuildBlueprint(features, IsModule, BuildModule, excludedTypes);
+            var dependencies = BuildBlueprint(features, IsDependency, (t, f) => BuildDependency(t, f, descriptor),
+                excludedTypes);
             var controllers = BuildBlueprint(features, IsController, BuildController, excludedTypes);
 
             var result = new ShellBlueprint {
                 Settings = settings,
                 Descriptor = descriptor,
-                Dependencies = dependencies.ToArray(),
+                Dependencies = dependencies.Concat(modules).ToArray(),
                 Controllers = controllers,
             };
 
@@ -59,7 +63,9 @@ namespace OrchardVNext.Environment.ShellBuilders {
             // Identify replaced types
             foreach (Feature feature in features) {
                 foreach (Type type in feature.ExportedTypes) {
-                    foreach (OrchardSuppressDependencyAttribute replacedType in type.GetTypeInfo().GetCustomAttributes(typeof(OrchardSuppressDependencyAttribute), false)) {
+                    foreach (
+                        OrchardSuppressDependencyAttribute replacedType in
+                            type.GetTypeInfo().GetCustomAttributes(typeof (OrchardSuppressDependencyAttribute), false)) {
                         excludedTypes.Add(replacedType.FullName);
                     }
                 }
@@ -77,10 +83,10 @@ namespace OrchardVNext.Environment.ShellBuilders {
                     }
                 },
                 ExportedTypes =
-                    typeof(OrchardStarter).GetTypeInfo().Assembly.ExportedTypes
-                    .Where(t => t.GetTypeInfo().IsClass && !t.GetTypeInfo().IsAbstract)
-                    .Except(new[] { typeof(DefaultOrchardHost) })
-                    .ToArray()
+                    typeof (OrchardStarter).GetTypeInfo().Assembly.ExportedTypes
+                        .Where(t => t.GetTypeInfo().IsClass && !t.GetTypeInfo().IsAbstract)
+                        .Except(new[] {typeof (DefaultOrchardHost)})
+                        .ToArray()
             };
         }
 
@@ -93,18 +99,26 @@ namespace OrchardVNext.Environment.ShellBuilders {
             // Load types excluding the replaced types
             return features.SelectMany(
                 feature => feature.ExportedTypes
-                               .Where(predicate)
-                               .Where(type => !excludedTypes.Contains(type.FullName))
-                               .Select(type => selector(type, feature)))
+                    .Where(predicate)
+                    .Where(type => !excludedTypes.Contains(type.FullName))
+                    .Select(type => selector(type, feature)))
                 .ToArray();
         }
-
-        private static bool IsController(Type type) {
-            return typeof(Controller).IsAssignableFrom(type);
+        
+        private static bool IsModule(Type type) {
+            return typeof (IModule).IsAssignableFrom(type);
         }
 
+        private static DependencyBlueprint BuildModule(Type type, Feature feature) {
+            return new DependencyBlueprint {
+                Type = type,
+                Feature = feature,
+                Parameters = Enumerable.Empty<ShellParameter>()
+            };
+        }
+        
         private static bool IsDependency(Type type) {
-            return typeof(IDependency).IsAssignableFrom(type);
+            return typeof (IDependency).IsAssignableFrom(type);
         }
 
         private static DependencyBlueprint BuildDependency(Type type, Feature feature, ShellDescriptor descriptor) {
@@ -113,6 +127,10 @@ namespace OrchardVNext.Environment.ShellBuilders {
                 Feature = feature,
                 Parameters = descriptor.Parameters.Where(x => x.Component == type.FullName).ToArray()
             };
+        }
+
+        private static bool IsController(Type type) {
+            return typeof(Controller).IsAssignableFrom(type);
         }
 
         private static ControllerBlueprint BuildController(Type type, Feature feature) {

@@ -3,6 +3,7 @@ using Microsoft.Framework.Logging;
 using OrchardVNext.Demo.Models;
 using OrchardVNext.Environment.Configuration;
 
+
 namespace OrchardVNext.Demo
 {
     public interface ITestDependency : IDependency

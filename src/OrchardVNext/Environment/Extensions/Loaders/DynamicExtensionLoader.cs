@@ -2,17 +2,20 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Versioning;
+using System.Linq;
 using Microsoft.Framework.Runtime;
 using OrchardVNext.Environment.Extensions.Models;
 using OrchardVNext.FileSystems.VirtualPath;
 
 namespace OrchardVNext.Environment.Extensions.Loaders {
-    public class DefaultExtensionLoader : IExtensionLoader {
+    public class DynamicExtensionLoader : IExtensionLoader {
+        public static readonly string[] ExtensionsVirtualPathPrefixes = { "~/Modules", "~/Themes" };
+
         private readonly IVirtualPathProvider _virtualPathProvider;
         private readonly IServiceProvider _serviceProvider;
         private readonly IAssemblyLoaderContainer _loaderContainer;
 
-        public DefaultExtensionLoader(
+        public DynamicExtensionLoader(
             IVirtualPathProvider virtualPathProvider,
             IServiceProvider serviceProvider,
             IAssemblyLoaderContainer container) {
@@ -25,7 +28,7 @@ namespace OrchardVNext.Environment.Extensions.Loaders {
 
         public string Name => GetType().Name;
 
-        public int Order => 1;
+        public int Order => 20;
 
         public void ExtensionActivated(ExtensionLoadingContext ctx, ExtensionDescriptor extension) {
         }
@@ -38,6 +41,9 @@ namespace OrchardVNext.Environment.Extensions.Loaders {
         }
 
         public ExtensionEntry Load(ExtensionDescriptor descriptor) {
+            if (!ExtensionsVirtualPathPrefixes.Contains(descriptor.Location)) {
+                return null;
+            }
 
             var plocation = _virtualPathProvider.MapPath(descriptor.Location);
 
@@ -45,7 +51,6 @@ namespace OrchardVNext.Environment.Extensions.Loaders {
                 var assembly = Assembly.Load(new AssemblyName(descriptor.Id));
 
                 Logger.Information("Loaded referenced extension \"{0}\": assembly name=\"{1}\"", descriptor.Name, assembly.FullName);
-
 
                 return new ExtensionEntry {
                     Descriptor = descriptor,
@@ -66,10 +71,10 @@ namespace OrchardVNext.Environment.Extensions.Loaders {
         }
     }
 
-    //internal class LibraryKey : ILibraryKey {
-    //    public string Name { get; set; }
-    //    public FrameworkName TargetFramework { get; set; }
-    //    public string Configuration { get; set; }
-    //    public string Aspect { get; set; }
-    //}
+    internal class LibraryKey : ILibraryKey {
+        public string Name { get; set; }
+        public FrameworkName TargetFramework { get; set; }
+        public string Configuration { get; set; }
+        public string Aspect { get; set; }
+    }
 }
