@@ -1,0 +1,30 @@
+﻿{
+    "webroot": "wwwroot",
+    "version": "2.0.0-*",
+    "exclude": [
+        "wwwroot",
+        "Core",
+        "Modules",
+        "Themes"
+    ],
+    "packExclude": [
+        "**.kproj",
+        "**.user",
+        "**.vspscc"
+    ],
+    "dependencies": {
+       "Microsoft.AspNet.Server.IIS": "1.0.0-beta4-*",
+        "Microsoft.AspNet.Mvc": "6.0.0-beta4-*",
+        "Microsoft.AspNet.Hosting": "1.0.0-beta4-*",
+        "Microsoft.AspNet.Server.WebListener": "1.0.0-beta4-*", 
+		"OrchardVNext": ""
+    },
+    "commands": {
+        "web": "Microsoft.AspNet.Hosting --server Microsoft.AspNet.Server.WebListener --server.urls http://local.orchardvnext.test1.com;http://local.orchardvnext.test2.com;http://localhost:61562"
+    },
+    "compilationOptions": { "define": [ "TRACE" ], "warningsAsErrors": true },
+    "frameworks": {
+        "aspnet50": { },
+        "aspnetcore50": { }
+    }
+}

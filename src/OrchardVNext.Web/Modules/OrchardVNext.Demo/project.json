@@ -1,0 +1,10 @@
+﻿{
+    "dependencies": {
+        "Microsoft.AspNet.Mvc": "6.0.0-beta4-*",
+        "OrchardVNext": ""
+    },
+    "frameworks": {
+        "aspnet50": { },
+        "aspnetcore50": { }
+    }
+}
